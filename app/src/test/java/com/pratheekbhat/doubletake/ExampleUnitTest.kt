@@ -1,4 +1,4 @@
-package com.example.doubletake
+package com.pratheekbhat.doubletake
 
 import org.junit.Test
 

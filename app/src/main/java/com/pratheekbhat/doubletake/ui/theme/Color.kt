@@ -1,4 +1,4 @@
-package com.example.doubletake.ui.theme
+package com.pratheekbhat.doubletake.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
