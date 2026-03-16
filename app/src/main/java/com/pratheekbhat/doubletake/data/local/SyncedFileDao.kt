@@ -1,14 +1,15 @@
 package com.pratheekbhat.doubletake.data.local
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Upsert
 import com.pratheekbhat.doubletake.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SyncedFileDao {
-    @Upsert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplace(syncedFile: SyncedFileEntity)
 
     @Query("SELECT * FROM synced_files WHERE syncPairId = :syncPairId AND relativePath = :relativePath")
