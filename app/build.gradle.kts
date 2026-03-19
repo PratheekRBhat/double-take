@@ -80,11 +80,14 @@ dependencies {
 
     // Drive + Auth
     implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.drive)
     implementation(libs.google.play.services.auth)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Navigation + DataStore
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.documentfile)
 
     // Unit tests
     testImplementation(libs.mockk)
