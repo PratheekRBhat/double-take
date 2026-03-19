@@ -19,6 +19,9 @@ interface SyncPairDao {
     @Delete
     suspend fun delete(syncPair: SyncPairEntity)
 
+    @Query("DELETE FROM sync_pairs WHERE id = :id")
+    suspend fun deleteByPairId(id: Long)
+
     @Query("SELECT * FROM sync_pairs WHERE id = :id")
     suspend fun getById(id: Long): SyncPairEntity?
 
@@ -30,4 +33,7 @@ interface SyncPairDao {
 
     @Query("UPDATE sync_pairs SET lastSyncedAt = :timestamp WHERE id = :id")
     suspend fun updateLastSyncedAt(id: Long, timestamp: Long)
+
+    @Query("UPDATE sync_pairs SET isEnabled = :enabled WHERE id = :id")
+    suspend fun updateEnabled(id: Long, enabled: Boolean)
 }
