@@ -11,13 +11,14 @@ import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.File
 import com.pratheekbhat.doubletake.domain.model.RemoteFileMetadata
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DriveServiceClient @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val credential: GoogleAccountCredential
 ) {
     val driveService: Drive by lazy {

@@ -5,6 +5,7 @@ import android.content.Context
 import com.pratheekbhat.doubletake.data.repository.AuthRepositoryImpl
 import com.pratheekbhat.doubletake.data.repository.StorageRepositoryImpl
 import com.pratheekbhat.doubletake.data.repository.SyncPairRepositoryImpl
+import com.pratheekbhat.doubletake.data.repository.SyncRepositoryImpl
 import com.pratheekbhat.doubletake.domain.repository.AuthRepository
 import com.pratheekbhat.doubletake.domain.repository.StorageRepository
 import com.pratheekbhat.doubletake.domain.repository.SyncPairRepository
@@ -30,7 +31,7 @@ abstract class RepositoryModule {
     abstract fun bindSyncPairRepository(impl: SyncPairRepositoryImpl): SyncPairRepository
 
     @Binds
-    abstract fun bindSyncRepository(impl: SyncPairRepositoryImpl): SyncRepository
+    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
 
     companion object {
         @Provides
