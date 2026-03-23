@@ -1,6 +1,5 @@
 package com.pratheekbhat.doubletake.data.repository
 
-import android.net.Uri
 import com.pratheekbhat.doubletake.data.local.SyncPairDao
 import com.pratheekbhat.doubletake.data.local.SyncedFileDao
 import com.pratheekbhat.doubletake.data.local.SyncedFileEntity
@@ -17,6 +16,7 @@ import com.pratheekbhat.doubletake.domain.usecase.SyncDiffer
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
@@ -32,7 +32,7 @@ class SyncRepositoryImpl @Inject constructor(
             val pair = syncPairDao.getById(syncPairId)
                 ?: return Result.failure(Exception("SyncPair not found: $syncPairId"))
 
-            val localFiles = storageRepository.listLocalFiles(Uri.parse(pair.localFolderUri))
+            val localFiles = storageRepository.listLocalFiles(pair.localFolderUri.toUri())
                 .getOrElse { return Result.failure(it) }
                 .associateBy { it.name }
 
@@ -69,7 +69,7 @@ class SyncRepositoryImpl @Inject constructor(
                         SyncAction.DOWNLOAD -> {
                             val remote = item.remoteFile!!
                             val inputStream = driveServiceClient.downloadFile(remote.driveFileId).getOrThrow()
-                            val folderUri = Uri.parse(pair.localFolderUri)
+                            val folderUri = pair.localFolderUri.toUri()
                             storageRepository.writeFile(folderUri, remote.fileName, inputStream).getOrThrow()
                             inputStream.close()
 
@@ -82,7 +82,7 @@ class SyncRepositoryImpl @Inject constructor(
                         SyncAction.TRASH_LOCAL -> {
                             val db = item.dbRecord!!
                             if (db.localUri != null) {
-                                storageRepository.deleteFile(Uri.parse(db.localUri))
+                                storageRepository.deleteFile(db.localUri.toUri())
                             }
                             syncedFileDao.deleteByRelativePath(syncPairId, item.relativePath)
                             trashedLocal++
@@ -113,7 +113,7 @@ class SyncRepositoryImpl @Inject constructor(
                                 }
                                 SyncAction.DOWNLOAD -> {
                                     val inputStream = driveServiceClient.downloadFile(remote.driveFileId).getOrThrow()
-                                    storageRepository.writeFile(Uri.parse(pair.localFolderUri), remote.fileName, inputStream).getOrThrow()
+                                    storageRepository.writeFile(pair.localFolderUri.toUri(), remote.fileName, inputStream).getOrThrow()
                                     inputStream.close()
                                     upsertDbRecord(syncPairId, item.relativePath, null, remote, SyncStatus.SYNCED)
                                     downloaded++
@@ -122,7 +122,7 @@ class SyncRepositoryImpl @Inject constructor(
                                     val copyName = resolution.conflictCopyName!!
                                     val inputStream = driveServiceClient.downloadFile(remote.driveFileId).getOrThrow()
                                     storageRepository.writeFile(
-                                        Uri.parse(pair.localFolderUri), copyName, inputStream
+                                        pair.localFolderUri.toUri(), copyName, inputStream
                                     ).getOrThrow()
                                     inputStream.close()
                                     driveServiceClient.uploadFile(
@@ -143,7 +143,7 @@ class SyncRepositoryImpl @Inject constructor(
 
                         SyncAction.NO_OP -> {}
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     failures++
                 }
             }

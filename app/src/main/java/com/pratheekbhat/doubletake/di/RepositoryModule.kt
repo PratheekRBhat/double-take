@@ -8,6 +8,7 @@ import com.pratheekbhat.doubletake.data.repository.SyncPairRepositoryImpl
 import com.pratheekbhat.doubletake.domain.repository.AuthRepository
 import com.pratheekbhat.doubletake.domain.repository.StorageRepository
 import com.pratheekbhat.doubletake.domain.repository.SyncPairRepository
+import com.pratheekbhat.doubletake.domain.repository.SyncRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -27,6 +28,9 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindSyncPairRepository(impl: SyncPairRepositoryImpl): SyncPairRepository
+
+    @Binds
+    abstract fun bindSyncRepository(impl: SyncPairRepositoryImpl): SyncRepository
 
     companion object {
         @Provides
