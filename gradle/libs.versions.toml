@@ -23,6 +23,7 @@ turbine = "1.1.0"
 truth = "1.4.4"
 couroutinesTest = "1.0.1"
 documentfile = "1.0.1"
+robolectric = "4.12.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +71,8 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "couroutinesTest" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "couroutinesTest" }
+
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 # Android Test
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
