@@ -7,10 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.pratheekbhat.doubletake.presentation.navigation.BottomNavBar
+import com.pratheekbhat.doubletake.presentation.navigation.DoubleTakeNavHost
+import com.pratheekbhat.doubletake.presentation.navigation.Screen
 import com.pratheekbhat.doubletake.ui.theme.DoubleTakeTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,29 +23,29 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DoubleTakeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                val navController = rememberNavController()
+                val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+                val showBottomBar = currentRoute in listOf(
+                    Screen.Dashboard.route,
+                    Screen.SyncLog.route,
+                    Screen.Settings.route
+                )
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        if (showBottomBar) {
+                            BottomNavBar(navController)
+                        }
+                    }
+                ) { innerPadding ->
+                    DoubleTakeNavHost(
+                        navController = navController,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    DoubleTakeTheme {
-        Greeting("Android")
     }
 }
