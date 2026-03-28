@@ -16,6 +16,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardScreen
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardViewModel
+import com.pratheekbhat.doubletake.presentation.setup.AddSyncPairScreen
+import com.pratheekbhat.doubletake.presentation.setup.AddSyncPairViewModel
 import com.pratheekbhat.doubletake.presentation.setup.DriveFolderPickerScreen
 import com.pratheekbhat.doubletake.presentation.setup.DriveFolderPickerViewModel
 import com.pratheekbhat.doubletake.presentation.setup.SetupScreen
@@ -123,7 +125,49 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
         }
 
         composable(Screen.AddSyncPair.route) {
-            // TODO: AddSyncPairScreen()
+            val addPairViewModel: AddSyncPairViewModel = hiltViewModel()
+            val addPairState by addPairViewModel.uiState.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+
+            val localFolderLauncher =
+                rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocumentTree()) { uri ->
+                    if (uri != null) {
+                        val documentFile = DocumentFile.fromTreeUri(context, uri)
+                        addPairViewModel.onLocalFolderChosen(uri, documentFile?.name ?: "Selected Folder")
+                    }
+                }
+
+            val addPairDriveFolderId = navController.currentBackStackEntry
+                ?.savedStateHandle
+                ?.getStateFlow<String?>("drive_folder_id", null)
+                ?.collectAsStateWithLifecycle()
+
+            val addPairDriveFolderName = navController.currentBackStackEntry
+                ?.savedStateHandle
+                ?.getStateFlow<String?>("drive_folder_name", null)
+                ?.collectAsStateWithLifecycle()
+
+            LaunchedEffect(addPairDriveFolderId?.value, addPairDriveFolderName?.value) {
+                val id = addPairDriveFolderId?.value
+                val name = addPairDriveFolderName?.value
+                if (id != null && name != null) {
+                    addPairViewModel.onDriveFolderSelected(id, name)
+                }
+            }
+
+            LaunchedEffect(addPairState.pairCreated) {
+                if (addPairState.pairCreated) {
+                    navController.popBackStack()
+                }
+            }
+
+            AddSyncPairScreen(
+                uiState = addPairState,
+                onChooseLocalFolder = { localFolderLauncher.launch(null) },
+                onSelectDriveFolder = { navController.navigate(Screen.DriveFolderPicker.route) },
+                onAddPair = { addPairViewModel.onAddPair() },
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(Screen.SyncLog.route) {
