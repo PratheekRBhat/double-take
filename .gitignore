@@ -1,14 +1,39 @@
+# IDE and Editors
+.idea/
+.vscode/
 *.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+*.swp
+*.swo
+.classpath
+.project
+.settings/
 
+# Build and Gradle
+.gradle/
+build/
+.cxx/
+.externalNativeBuild/
+
+# Android specific
+bin/
+gen/
+.android/
+local.properties
+proguard/
+*.jks
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Local configuration
+.config
+
+# Project tools
 /openspec
 /.claude
 /.cursor

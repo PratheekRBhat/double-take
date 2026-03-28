@@ -1,6 +1,8 @@
 package com.pratheekbhat.doubletake.data.repository
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.util.Log
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
@@ -22,24 +24,35 @@ class AuthRepositoryImpl @Inject constructor(
 
     override val isSignedIn: Flow<Boolean> = authDataStore.isSignedIn
 
-    override suspend fun signIn(activityContext: Activity): Result<Unit> {
+    override suspend fun signIn(activityContext: Activity): Result<PendingIntent?> {
         return try {
             val authRequest = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(DriveScopes.DRIVE_FILE))).build()
             val authClient = Identity.getAuthorizationClient(activityContext)
             val result = authClient.authorize(authRequest).await()
-            val accountName = result.serverAuthCode
-            if (accountName != null) {
-                credential.selectedAccountName = activityContext.intent?.extras?.getString("account_name")
-            }
 
-            val selectedAccount = credential.selectedAccountName
-            if (!selectedAccount.isNullOrEmpty()) {
-                authDataStore.saveAuthState(selectedAccount)
-                Result.success(Unit)
+            Log.d("[AuthRepository]", "hasResolution=${result.hasResolution()}")
+            Log.d("[AuthRepository]", "serverAuthCode=${result.serverAuthCode}")
+            Log.d("[AuthRepository]", "grantedScopes=${result.grantedScopes}")
+            Log.d("[AuthRepository]", "accessToken=${result.accessToken}")
+
+            if (result.hasResolution()) {
+                Result.success(result.pendingIntent)
             } else {
-                Result.failure(Exception("No account selected"))
+                val accountName = result.serverAuthCode
+                if (accountName != null) {
+                    credential.selectedAccountName = activityContext.intent?.extras?.getString("account_name")
+                }
+
+                val selectedAccount = credential.selectedAccountName
+                if (!selectedAccount.isNullOrEmpty()) {
+                    authDataStore.saveAuthState(selectedAccount)
+                    Result.success(null)
+                } else {
+                    Result.failure(Exception("No account selected"))
+                }
             }
         } catch (e: Exception) {
+            Log.e("[AuthRepository]", "signIn exception", e)
             Result.failure(e)
         }
     }
