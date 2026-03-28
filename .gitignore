@@ -21,6 +21,7 @@ gen/
 local.properties
 proguard/
 *.jks
+.kotlin/
 
 # OS files
 .DS_Store
