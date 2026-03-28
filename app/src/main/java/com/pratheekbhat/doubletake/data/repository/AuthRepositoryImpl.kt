@@ -1,5 +1,6 @@
 package com.pratheekbhat.doubletake.data.repository
 
+import android.accounts.AccountManager
 import android.app.Activity
 import android.app.PendingIntent
 import android.util.Log
@@ -26,7 +27,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signIn(activityContext: Activity): Result<PendingIntent?> {
         return try {
-            val authRequest = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(DriveScopes.DRIVE_FILE))).build()
+            val authRequest = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(DriveScopes.DRIVE))).build()
             val authClient = Identity.getAuthorizationClient(activityContext)
             val result = authClient.authorize(authRequest).await()
 
@@ -38,17 +39,20 @@ class AuthRepositoryImpl @Inject constructor(
             if (result.hasResolution()) {
                 Result.success(result.pendingIntent)
             } else {
-                val accountName = result.serverAuthCode
-                if (accountName != null) {
-                    credential.selectedAccountName = activityContext.intent?.extras?.getString("account_name")
-                }
+                if (result.grantedScopes.isNotEmpty()) {
+                    val accountManager = AccountManager.get(activityContext)
+                    val accounts = accountManager.getAccountsByType("com.google")
+                    val accountName = accounts.firstOrNull()?.name
 
-                val selectedAccount = credential.selectedAccountName
-                if (!selectedAccount.isNullOrEmpty()) {
-                    authDataStore.saveAuthState(selectedAccount)
+                    if (accountName != null) {
+                        credential.selectedAccountName = accountName
+                        authDataStore.saveAuthState(accountName)
+                    } else {
+                        authDataStore.saveAuthState("authorized")
+                    }
                     Result.success(null)
                 } else {
-                    Result.failure(Exception("No account selected"))
+                    Result.failure(Exception("Authorization not granted"))
                 }
             }
         } catch (e: Exception) {

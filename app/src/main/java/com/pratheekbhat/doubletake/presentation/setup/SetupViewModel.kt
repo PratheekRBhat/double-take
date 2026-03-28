@@ -1,16 +1,20 @@
 package com.pratheekbhat.doubletake.presentation.setup
 
+import android.accounts.AccountManager
 import android.app.Activity
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.activity.result.IntentSenderRequest
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.pratheekbhat.doubletake.data.local.AuthDataStore
 import com.pratheekbhat.doubletake.domain.usecase.AddSyncPairUseCase
 import com.pratheekbhat.doubletake.domain.usecase.SignInUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,7 +41,9 @@ data class SetupUiState(
 class SetupViewModel @Inject constructor(
     private val signInUseCase: SignInUseCase,
     private val addSyncPairUseCase: AddSyncPairUseCase,
-    private val authDataStore: AuthDataStore
+    private val authDataStore: AuthDataStore,
+    private val credential: GoogleAccountCredential,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SetupUiState())
@@ -124,8 +130,17 @@ class SetupViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "Sign in cancelled") }
                 return@launch
             }
-            authDataStore.saveAuthState("signed_in")
-            _uiState.update { it.copy(isDriveConnected = true) }
+            val accountManager = AccountManager.get(context)
+            val accounts = accountManager.getAccountsByType("com.google")
+            val accountName = accounts.firstOrNull()?.name
+
+            if (accountName != null) {
+                credential.selectedAccountName = accountName
+                authDataStore.saveAuthState(accountName)
+                _uiState.update { it.copy(isDriveConnected = true) }
+            } else {
+                _uiState.update { it.copy(error = "No Google account found on device") }
+            }
         }
     }
 }

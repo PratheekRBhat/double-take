@@ -6,4 +6,6 @@ sealed class Screen(val route: String) {
     data object AddSyncPair : Screen("add_sync_pair")
     data object SyncLog : Screen("sync_log")
     data object Settings : Screen("settings")
+
+    data object DriveFolderPicker : Screen("drive_folder_picker")
 }

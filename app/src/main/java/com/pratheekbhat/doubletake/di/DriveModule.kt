@@ -21,7 +21,7 @@ class DriveModule {
     ): GoogleAccountCredential {
         return GoogleAccountCredential.usingOAuth2(
             context,
-            listOf(DriveScopes.DRIVE_FILE)
+            listOf(DriveScopes.DRIVE)
         )
     }
 }

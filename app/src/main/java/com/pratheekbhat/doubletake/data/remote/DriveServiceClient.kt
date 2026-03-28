@@ -68,6 +68,45 @@ class DriveServiceClient @Inject constructor(
         }
     }
 
+    fun listFolders(parentFolderId: String = "root"): Result<List<Pair<String, String>>> {
+        return try {
+            val folders = mutableListOf<Pair<String, String>>()
+            var pageToken: String? = null
+
+            do {
+                val result = driveService.files().list()
+                    .setQ("'$parentFolderId' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+                    .setFields("nextPageToken, files(id, name)")
+                    .setPageToken(pageToken)
+                    .setOrderBy("name")
+                    .execute()
+
+                result.files?.forEach { file ->
+                    folders.add(Pair(file.id, file.name))
+                }
+                pageToken = result.nextPageToken
+            } while (pageToken != null)
+
+            Result.success(folders)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun createFolder(name: String, parentFolderId: String = "root"): Result<Pair<String, String>> {
+        return try {
+            val metadata = File().apply {
+                this.name = name
+                mimeType = "application/vnd.google-apps.folder"
+                parents = listOf(parentFolderId)
+            }
+            val folder = driveService.files().create(metadata).setFields("id, name").execute()
+            Result.success(Pair(folder.id, folder.name))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun uploadFile(
         localUri: Uri,
         driveParentFolderId: String,
