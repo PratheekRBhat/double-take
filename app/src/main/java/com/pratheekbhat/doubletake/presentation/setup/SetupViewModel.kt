@@ -43,6 +43,7 @@ class SetupViewModel @Inject constructor(
     private val addSyncPairUseCase: AddSyncPairUseCase,
     private val authDataStore: AuthDataStore,
     private val credential: GoogleAccountCredential,
+    private val syncWorkManager: com.pratheekbhat.doubletake.worker.SyncWorkManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -112,7 +113,11 @@ class SetupViewModel @Inject constructor(
                 localFolderName = state.localFolderName ?: "Local Folder",
                 driveFolderName = state.driveFolderName ?: "Drive Folder"
             )
-                .onSuccess { _uiState.update { it.copy(isLoading = false) } }
+                .onSuccess {
+                    syncWorkManager.schedulePeriodicSync()
+                    syncWorkManager.triggerImmediateSync()
+                    _uiState.update { it.copy(isLoading = false) }
+                }
                 .onFailure { exception ->
                     _uiState.update {
                         it.copy(

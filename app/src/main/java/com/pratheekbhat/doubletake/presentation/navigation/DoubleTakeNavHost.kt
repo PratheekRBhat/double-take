@@ -14,6 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pratheekbhat.doubletake.presentation.dashboard.DashboardScreen
+import com.pratheekbhat.doubletake.presentation.dashboard.DashboardViewModel
 import com.pratheekbhat.doubletake.presentation.setup.DriveFolderPickerScreen
 import com.pratheekbhat.doubletake.presentation.setup.DriveFolderPickerViewModel
 import com.pratheekbhat.doubletake.presentation.setup.SetupScreen
@@ -109,7 +111,15 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
         }
 
         composable(Screen.Dashboard.route) {
-            // TODO: DashboardScreen()
+            val dashboardViewModel: DashboardViewModel = hiltViewModel()
+            val dashboardState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+
+            DashboardScreen(
+                uiState = dashboardState,
+                onAddSyncPair = { navController.navigate(Screen.AddSyncPair.route) },
+                onSyncNow = { pairId -> dashboardViewModel.onSyncNow(pairId) },
+                onDeletePair = { pairId -> dashboardViewModel.onDeletePair(pairId) }
+            )
         }
 
         composable(Screen.AddSyncPair.route) {

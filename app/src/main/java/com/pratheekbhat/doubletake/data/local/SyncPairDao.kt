@@ -36,4 +36,7 @@ interface SyncPairDao {
 
     @Query("UPDATE sync_pairs SET isEnabled = :enabled WHERE id = :id")
     suspend fun updateEnabled(id: Long, enabled: Boolean)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM sync_pairs WHERE localFolderUri = :localUri AND driveFolderId = :driveId)")
+    suspend fun pairExists(localUri: String, driveId: String): Boolean
 }

@@ -19,6 +19,9 @@ class SyncPairRepositoryImpl @Inject constructor(
         driveName: String
     ): Result<SyncPairEntity> {
         return try {
+            if (syncPairDao.pairExists(localUri, driveId)) {
+                return Result.failure(Exception("This sync pair already exists"))
+            }
             val entity = SyncPairEntity(
                 localFolderUri = localUri,
                 localFolderName = localName,
