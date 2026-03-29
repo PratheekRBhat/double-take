@@ -16,6 +16,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardScreen
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardViewModel
+import com.pratheekbhat.doubletake.presentation.settings.SettingsScreen
+import com.pratheekbhat.doubletake.presentation.settings.SettingsViewModel
 import com.pratheekbhat.doubletake.presentation.log.SyncLogScreenWithCallbacks
 import com.pratheekbhat.doubletake.presentation.log.SyncLogViewModel
 import com.pratheekbhat.doubletake.presentation.setup.AddSyncPairScreen
@@ -26,10 +28,10 @@ import com.pratheekbhat.doubletake.presentation.setup.SetupScreen
 import com.pratheekbhat.doubletake.presentation.setup.SetupViewModel
 
 @Composable
-fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
+fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier, startDestination: String = Screen.Setup.route) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Setup.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(Screen.Setup.route) {
@@ -195,7 +197,26 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
         }
 
         composable(Screen.Settings.route) {
-            // TODO: SettingsScreen()
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+            LaunchedEffect(settingsState.signedOut) {
+                if (settingsState.signedOut) {
+                    navController.navigate(Screen.Setup.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+
+            SettingsScreen(
+                accountEmail = settingsState.accountEmail,
+                onReconfigure = {
+                    navController.navigate(Screen.Setup.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onSignOut = { settingsViewModel.signOut() }
+            )
         }
     }
 }

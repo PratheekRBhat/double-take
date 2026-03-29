@@ -1,6 +1,7 @@
 package com.pratheekbhat.doubletake
 
 import android.net.Uri
+import com.pratheekbhat.doubletake.data.local.SyncLogDao
 import com.pratheekbhat.doubletake.data.local.SyncPairDao
 import com.pratheekbhat.doubletake.data.local.SyncPairEntity
 import com.pratheekbhat.doubletake.data.local.SyncedFileDao
@@ -31,6 +32,7 @@ class SyncRepositoryImplTest {
 
     private lateinit var syncPairDao: SyncPairDao
     private lateinit var syncedFileDao: SyncedFileDao
+    private lateinit var syncLogDao: SyncLogDao
     private lateinit var driveServiceClient: DriveServiceClient
     private lateinit var storageRepository: StorageRepository
     private lateinit var syncDiffer: SyncDiffer
@@ -51,13 +53,14 @@ class SyncRepositoryImplTest {
     fun setup() {
         syncPairDao = mockk(relaxed = true)
         syncedFileDao = mockk(relaxed = true)
+        syncLogDao = mockk(relaxed = true)
         driveServiceClient = mockk(relaxed = true)
         storageRepository = mockk(relaxed = true)
         syncDiffer = mockk(relaxed = true)
         conflictResolver = mockk(relaxed = true)
 
         repository = SyncRepositoryImpl(
-            syncPairDao, syncedFileDao, driveServiceClient,
+            syncPairDao, syncedFileDao, syncLogDao, driveServiceClient,
             storageRepository, syncDiffer, conflictResolver
         )
     }

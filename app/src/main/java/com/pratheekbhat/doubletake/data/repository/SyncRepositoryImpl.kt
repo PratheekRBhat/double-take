@@ -1,5 +1,8 @@
 package com.pratheekbhat.doubletake.data.repository
 
+import android.util.Log
+import com.pratheekbhat.doubletake.data.local.SyncLogDao
+import com.pratheekbhat.doubletake.data.local.SyncLogEntity
 import com.pratheekbhat.doubletake.data.local.SyncPairDao
 import com.pratheekbhat.doubletake.data.local.SyncedFileDao
 import com.pratheekbhat.doubletake.data.local.SyncedFileEntity
@@ -22,6 +25,7 @@ import androidx.core.net.toUri
 class SyncRepositoryImpl @Inject constructor(
     private val syncPairDao: SyncPairDao,
     private val syncedFileDao: SyncedFileDao,
+    private val syncLogDao: SyncLogDao,
     private val driveServiceClient: DriveServiceClient,
     private val storageRepository: StorageRepository,
     private val syncDiffer: SyncDiffer,
@@ -63,6 +67,7 @@ class SyncRepositoryImpl @Inject constructor(
                                 existingDriveFileId = item.remoteFile?.driveFileId
                             ).getOrThrow()
                             upsertDbRecord(syncPairId, item.relativePath, local, result, SyncStatus.SYNCED)
+                            writeLog(syncPairId, "UPLOAD", item.relativePath, "SUCCESS", "Uploaded to Drive", pair.localFolderName, pair.driveFolderName)
                             uploaded++
                         }
 
@@ -76,6 +81,7 @@ class SyncRepositoryImpl @Inject constructor(
                             val localFiles = storageRepository.listLocalFiles(folderUri).getOrThrow()
                             val downloadedLocal = localFiles.find { it.name == remote.fileName }
                             upsertDbRecord(syncPairId, item.relativePath, downloadedLocal, remote, SyncStatus.SYNCED)
+                            writeLog(syncPairId, "DOWNLOAD", item.relativePath, "SUCCESS", "Downloaded from Drive", pair.driveFolderName, pair.localFolderName)
                             downloaded++
                         }
 
@@ -85,6 +91,7 @@ class SyncRepositoryImpl @Inject constructor(
                                 storageRepository.deleteFile(db.localUri.toUri())
                             }
                             syncedFileDao.deleteByRelativePath(syncPairId, item.relativePath)
+                            writeLog(syncPairId, "TRASH_LOCAL", item.relativePath, "SUCCESS", "Deleted locally (remote was removed)", pair.driveFolderName, pair.localFolderName)
                             trashedLocal++
                         }
 
@@ -94,6 +101,7 @@ class SyncRepositoryImpl @Inject constructor(
                                 driveServiceClient.trashFile(db.driveFileId).getOrThrow()
                             }
                             syncedFileDao.deleteByRelativePath(syncPairId, item.relativePath)
+                            writeLog(syncPairId, "TRASH_REMOTE", item.relativePath, "SUCCESS", "Trashed on Drive (local was removed)", pair.localFolderName, pair.driveFolderName)
                             trashedRemote++
                         }
 
@@ -109,6 +117,7 @@ class SyncRepositoryImpl @Inject constructor(
                                         remote.driveFileId
                                     ).getOrThrow()
                                     upsertDbRecord(syncPairId, item.relativePath, local, result, SyncStatus.SYNCED)
+                                    writeLog(syncPairId, "CONFLICT", item.relativePath, "SUCCESS", "Conflict resolved: local wins", pair.localFolderName, pair.driveFolderName)
                                     uploaded++
                                 }
                                 SyncAction.DOWNLOAD -> {
@@ -116,6 +125,7 @@ class SyncRepositoryImpl @Inject constructor(
                                     storageRepository.writeFile(pair.localFolderUri.toUri(), remote.fileName, inputStream).getOrThrow()
                                     inputStream.close()
                                     upsertDbRecord(syncPairId, item.relativePath, null, remote, SyncStatus.SYNCED)
+                                    writeLog(syncPairId, "CONFLICT", item.relativePath, "SUCCESS", "Conflict resolved: remote wins", pair.driveFolderName, pair.localFolderName)
                                     downloaded++
                                 }
                                 SyncAction.CONFLICT -> {
@@ -131,6 +141,7 @@ class SyncRepositoryImpl @Inject constructor(
                                         existingDriveFileId = remote.driveFileId
                                     ).getOrThrow()
                                     upsertDbRecord(syncPairId, item.relativePath, local, remote, SyncStatus.CONFLICT)
+                                    writeLog(syncPairId, "CONFLICT", item.relativePath, "SUCCESS", "Conflict: both versions kept", pair.localFolderName, pair.driveFolderName)
                                     conflicts++
                                 }
                                 else -> {}
@@ -149,11 +160,14 @@ class SyncRepositoryImpl @Inject constructor(
 
                         SyncAction.NO_OP -> {}
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("[SyncRepository]", "Failed to sync ${item.relativePath}", e)
+                    writeLog(syncPairId, item.action.name, item.relativePath, "FAILURE", e.message ?: "Unknown error", pair.localFolderName, pair.driveFolderName)
                     failures++
                 }
             }
             syncPairDao.updateLastSyncedAt(syncPairId, System.currentTimeMillis())
+            syncLogDao.deleteOldestBeyond()
 
             Result.success(
                 SyncResult(
@@ -183,6 +197,33 @@ class SyncRepositoryImpl @Inject constructor(
             Result.success(results)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private suspend fun writeLog(
+        syncPairId: Long,
+        action: String,
+        filePath: String,
+        result: String,
+        details: String?,
+        sourceName: String?,
+        destinationName: String?
+    ) {
+        try {
+            syncLogDao.insertLog(
+                SyncLogEntity(
+                    syncPairId = syncPairId,
+                    timestamp = System.currentTimeMillis(),
+                    action = action,
+                    filePath = filePath,
+                    result = result,
+                    details = details,
+                    sourceName = sourceName,
+                    destinationName = destinationName
+                )
+            )
+        } catch (e: Exception) {
+            Log.e("[SyncRepository]", "Failed to write sync log", e)
         }
     }
 
