@@ -172,6 +172,27 @@ class SyncRepositoryImplTest {
     }
 
     @Test
+    fun `performSync with LINK_EXISTING creates db record without file transfer`() = runTest {
+        val localFile = buildLocal("file.txt")
+        val remoteFile = buildRemote("file.txt")
+
+        setupBasicMocks(
+            actions = listOf(
+                SyncActionItem("file.txt", SyncAction.LINK_EXISTING, localFile, remoteFile, null)
+            )
+        )
+
+        val result = repository.performSync(1L)
+
+        assertTrue(result.isSuccess)
+        assertEquals(0, result.getOrThrow().uploaded)
+        assertEquals(0, result.getOrThrow().downloaded)
+        coVerify { syncedFileDao.insertOrReplace(any()) }
+        coVerify(exactly = 0) { driveServiceClient.uploadFile(any(), any(), any()) }
+        coVerify(exactly = 0) { driveServiceClient.downloadFile(any()) }
+    }
+
+    @Test
     fun `performSyncAll iterates all enabled pairs`() = runTest {
         val pair2 = testPair.copy(id = 2L)
         coEvery { syncPairDao.getAllEnabled() } returns flowOf(listOf(testPair, pair2))

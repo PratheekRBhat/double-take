@@ -137,6 +137,12 @@ class SyncRepositoryImpl @Inject constructor(
                             }
                         }
 
+                        SyncAction.LINK_EXISTING -> {
+                            val local = item.localFile
+                            val remote = item.remoteFile
+                            upsertDbRecord(syncPairId, item.relativePath, local, remote, SyncStatus.SYNCED)
+                        }
+
                         SyncAction.CLEANUP_DB -> {
                             syncedFileDao.deleteByRelativePath(syncPairId, item.relativePath)
                         }

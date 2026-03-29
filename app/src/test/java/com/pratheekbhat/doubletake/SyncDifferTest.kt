@@ -131,14 +131,25 @@ class SyncDifferTest {
     }
 
     @Test
-    fun `new on both sides with different timestamps produces UPLOAD when local newer`() {
+    fun `new on both sides with no DB record produces LINK_EXISTING`() {
         val local = mapOf("file.txt" to buildLocal("file.txt", lastModified = 5000L))
         val remote = mapOf("file.txt" to buildRemote("file.txt", modifiedTime = 1000L))
 
         val result = differ.diff(local, remote, emptyMap())
 
         assertEquals(1, result.size)
-        assertEquals(SyncAction.UPLOAD, result[0].action)
+        assertEquals(SyncAction.LINK_EXISTING, result[0].action)
+    }
+
+    @Test
+    fun `LINK_EXISTING regardless of timestamp difference`() {
+        val local = mapOf("file.txt" to buildLocal("file.txt", lastModified = 1000L))
+        val remote = mapOf("file.txt" to buildRemote("file.txt", modifiedTime = 9000L))
+
+        val result = differ.diff(local, remote, emptyMap())
+
+        assertEquals(1, result.size)
+        assertEquals(SyncAction.LINK_EXISTING, result[0].action)
     }
 
     @Test

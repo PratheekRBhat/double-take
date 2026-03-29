@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.pratheekbhat.doubletake.data.local.DoubleTakeDatabase
 import com.pratheekbhat.doubletake.data.local.SyncPairDao
+import com.pratheekbhat.doubletake.data.local.SyncLogDao
 import com.pratheekbhat.doubletake.data.local.SyncedFileDao
 import dagger.Module
 import dagger.Provides
@@ -31,4 +32,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSyncedFileDao(db: DoubleTakeDatabase): SyncedFileDao = db.syncedFileDao()
+
+    @Provides
+    fun provideSyncLogDao(db: DoubleTakeDatabase): SyncLogDao = db.syncLogDao()
 }

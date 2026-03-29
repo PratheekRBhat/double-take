@@ -27,7 +27,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signIn(activityContext: Activity): Result<PendingIntent?> {
         return try {
-            val authRequest = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(DriveScopes.DRIVE))).build()
+            val authRequest = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(DriveScopes.DRIVE), Scope("email"))).build()
             val authClient = Identity.getAuthorizationClient(activityContext)
             val result = authClient.authorize(authRequest).await()
 
@@ -40,15 +40,16 @@ class AuthRepositoryImpl @Inject constructor(
                 Result.success(result.pendingIntent)
             } else {
                 if (result.grantedScopes.isNotEmpty()) {
-                    val accountManager = AccountManager.get(activityContext)
-                    val accounts = accountManager.getAccountsByType("com.google")
-                    val accountName = accounts.firstOrNull()?.name
-
-                    if (accountName != null) {
-                        credential.selectedAccountName = accountName
-                        authDataStore.saveAuthState(accountName)
-                    } else {
-                        authDataStore.saveAuthState("authorized")
+                    val accessToken = result.accessToken
+                    if (accessToken != null) {
+                        val email = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { fetchEmailFromToken(accessToken) }
+                        if (email != null) {
+                            credential.selectedAccountName = email
+                            authDataStore.saveAuthState(email)
+                            Log.d("[AuthRepository]", "Credential set to: $email")
+                        } else {
+                            Log.w("[AuthRepository]", "Could not resolve email from token")
+                        }
                     }
                     Result.success(null)
                 } else {
@@ -72,4 +73,26 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCredential(): GoogleAccountCredential = credential
+
+    private fun fetchEmailFromToken(accessToken: String): String? {
+        return try {
+            val url = java.net.URL("https://www.googleapis.com/oauth2/v3/userinfo")
+            val connection = url.openConnection() as java.net.HttpURLConnection
+            connection.setRequestProperty("Authorization", "Bearer $accessToken")
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+
+            if (connection.responseCode == 200) {
+                val response = connection.inputStream.bufferedReader().readText()
+                val emailRegex = """"email"\s*:\s*"([^"]+)"""".toRegex()
+                emailRegex.find(response)?.groupValues?.get(1)
+            } else {
+                Log.e("[AuthRepository]", "Tokeninfo call failed: ${connection.responseCode}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("[AuthRepository]", "Failed to fetch email from token", e)
+            null
+        }
+    }
 }

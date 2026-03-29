@@ -38,10 +38,8 @@ class SyncDiffer @Inject constructor() {
                     }
                 }
 
-                // New on both sides, not in DB
-                local != null && remote != null && db == null -> {
-                    resolveConflict(local, remote)
-                }
+                // Exists on both sides, not in DB -- link them without re-uploading/downloading
+                local != null && remote != null && db == null -> SyncAction.LINK_EXISTING
 
                 // In local and DB, gone from remote (remote deleted it)
                 local != null && remote == null && db != null -> SyncAction.TRASH_LOCAL

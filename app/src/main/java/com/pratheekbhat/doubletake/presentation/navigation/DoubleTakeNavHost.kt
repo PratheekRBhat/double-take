@@ -16,6 +16,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardScreen
 import com.pratheekbhat.doubletake.presentation.dashboard.DashboardViewModel
+import com.pratheekbhat.doubletake.presentation.log.SyncLogScreenWithCallbacks
+import com.pratheekbhat.doubletake.presentation.log.SyncLogViewModel
 import com.pratheekbhat.doubletake.presentation.setup.AddSyncPairScreen
 import com.pratheekbhat.doubletake.presentation.setup.AddSyncPairViewModel
 import com.pratheekbhat.doubletake.presentation.setup.DriveFolderPickerScreen
@@ -38,9 +40,9 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
             val authLauncher =
                 rememberLauncherForActivityResult(contract = ActivityResultContracts.StartIntentSenderForResult()) { result ->
                     if (result.resultCode == Activity.RESULT_OK) {
-                        viewModel.onAuthResult(result.data)
+                        viewModel.onAuthResult(result.data, context as Activity)
                     } else {
-                        viewModel.onAuthResult(null)
+                        viewModel.onAuthResult(null, context as Activity)
                     }
                 }
 
@@ -93,6 +95,18 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
         composable(Screen.DriveFolderPicker.route) {
             val pickerViewModel: DriveFolderPickerViewModel = hiltViewModel()
             val pickerState by pickerViewModel.uiState.collectAsStateWithLifecycle()
+
+            val consentLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                pickerViewModel.onConsentResult(result.resultCode == Activity.RESULT_OK)
+            }
+
+            LaunchedEffect(pickerState.consentIntent) {
+                pickerState.consentIntent?.let { intent ->
+                    consentLauncher.launch(intent)
+                }
+            }
 
             DriveFolderPickerScreen(
                 folders = pickerState.folders,
@@ -171,7 +185,13 @@ fun DoubleTakeNavHost(navController: NavHostController, modifier: Modifier) {
         }
 
         composable(Screen.SyncLog.route) {
-            // TODO: SyncLogScreen()
+            val syncLogViewModel: SyncLogViewModel = hiltViewModel()
+            val syncLogState by syncLogViewModel.uiState.collectAsStateWithLifecycle()
+
+            SyncLogScreenWithCallbacks(
+                uiState = syncLogState,
+                onFilterSelected = { filter -> syncLogViewModel.onFilterSelected(filter) }
+            )
         }
 
         composable(Screen.Settings.route) {

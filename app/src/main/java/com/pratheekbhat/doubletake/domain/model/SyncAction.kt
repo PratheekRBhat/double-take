@@ -7,5 +7,6 @@ enum class SyncAction {
     TRASH_REMOTE,
     CONFLICT,
     NO_OP,
-    CLEANUP_DB
+    CLEANUP_DB,
+    LINK_EXISTING
 }
